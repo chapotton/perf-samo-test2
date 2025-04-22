@@ -149,18 +149,24 @@
         });
 
         function initPlayer(joueur) {
-            db.ref(`joueurs/${joueur}`).once("value", snapshot => {
-                if (!snapshot.exists()) {
-                    db.ref(`joueurs/${joueur}`).set({});
-                }
+            // Vérifier si le tableau existe déjà
+            if (!document.getElementById(`table-${joueur}`)) {
                 renderTable(joueur, false);
-            });
+            }
         }
 
         function loadAllPlayers() {
+            const container = document.getElementById("tableContainer");
+            container.innerHTML = ""; // Vider le container
+
             db.ref("joueurs").on("value", snapshot => {
                 const joueurs = snapshot.val() || {};
-                Object.keys(joueurs).forEach(joueur => renderTable(joueur, true));
+                Object.keys(joueurs).forEach(joueur => {
+                    // Vérifier si le tableau existe déjà
+                    if (!document.getElementById(`table-${joueur}`)) {
+                        renderTable(joueur, true);
+                    }
+                });
             });
         }
 
@@ -174,6 +180,7 @@
             ];
             const container = document.getElementById("tableContainer");
             const wrapper = document.createElement("div");
+            wrapper.id = `table-${joueur}`; // Ajouter un ID au wrapper
             const title = document.createElement("h2");
             title.textContent = joueur;
             wrapper.appendChild(title);
@@ -193,15 +200,16 @@
                     const input = document.createElement("input");
                     input.type = "number";
                     input.step = "0.01";
-                    // Synchronisation en temps réel : écoute des changements
+
                     db.ref(`joueurs/${joueur}/${ex}/j${i}`).on("value", snap => {
                         input.value = snap.val() || "";
-                        updateRow(row); // Mettre à jour la ligne
+                        updateRow(row);
                     });
+
                     input.oninput = () => {
-                        // Mise à jour de la base de données
                         db.ref(`joueurs/${joueur}/${ex}/j${i}`).set(input.value);
                     };
+
                     const td = document.createElement("td");
                     td.appendChild(input);
                     row.appendChild(td);
@@ -248,7 +256,7 @@
             const name = document.getElementById("newPlayer").value.trim();
             if (name) {
                 db.ref(`joueurs/${name}`).set({});
-                renderTable(name, true);
+                initPlayer(name); // Créer le tableau immédiatement
             }
         }
 
