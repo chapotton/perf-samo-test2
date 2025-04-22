@@ -1,25 +1,80 @@
-// ... HTML HEAD et STRUCTURE INCHANGÉE ... (jusqu'à la balise <script>)
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PERF SAMO TEST 2 BIS</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fdf6f0;
+      margin: 0;
+      padding: 20px;
+      color: #2b5b2b;
+    }
+    h1 {
+      text-align: center;
+      color: #c96f2c;
+    }
+    input, button {
+      padding: 8px;
+      margin: 5px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+    th {
+      background: #c96f2c;
+      color: white;
+    }
+    .gain { color: green; }
+    .loss { color: red; }
+  </style>
+</head>
+<body>
+  <h1>PERF SAMO TEST 2 BIS</h1>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAIw_TFPfMzBH2fdIlEjodoDiEodVzVLQI",
-    authDomain: "perf-samo-test2bis.firebaseapp.com",
-    databaseURL: "https://perf-samo-test2bis-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "perf-samo-test2bis",
-    storageBucket: "perf-samo-test2bis.firebasestorage.app",
-    messagingSenderId: "182514352903",
-    appId: "1:182514352903:web:4ab8e8e091643fd29d3ba2"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  <div id="identificationZone">
+    <form id="identificationForm">
+      <input type="text" id="username" placeholder="Ton prénom ou pseudo" />
+      <button type="submit">Valider</button>
+    </form>
+  </div>
 
-  let currentUser = null;
+  <div id="adminZone" style="display: none;">
+    <input type="text" id="newPlayer" placeholder="Ajouter un joueur" />
+    <button onclick="addPlayer()">Ajouter</button>
+    <button onclick="removePlayer()">Supprimer joueur</button>
+  </div>
 
-  document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(() => {
-      document.getElementById("intro").style.display = "none";
-      document.querySelector("main").style.display = "block";
-    }, 3000);
+  <div id="exportZone" style="display: none;">
+    <button onclick="exportCSV()">Exporter CSV</button>
+  </div>
+
+  <div id="tableContainer"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIw_TFPfMzBH2fdIlEjodoDiEodVzVLQI",
+      authDomain: "perf-samo-test2bis.firebaseapp.com",
+      databaseURL: "https://perf-samo-test2bis-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "perf-samo-test2bis",
+      storageBucket: "perf-samo-test2bis.firebasestorage.app",
+      messagingSenderId: "182514352903",
+      appId: "1:182514352903:web:4ab8e8e091643fd29d3ba2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let currentUser = null;
 
     document.getElementById("identificationForm").addEventListener("submit", function (e) {
       e.preventDefault();
@@ -50,127 +105,126 @@
         document.getElementById("identificationZone").style.display = "none";
       }
     });
-  });
 
-  function renderTable(joueur, isAdmin) {
-    const jours = ["J1", "J7", "J14", "J21", "J28", "J35", "J42", "J49"];
-    const exercices = [
-      "Aller-retour largeur",
-      "Aller longueur",
-      "Aller-retour longueur",
-      "Aller-retour largeur avec lignes"
-    ];
-    const container = document.getElementById("tableContainer");
-    const wrapper = document.createElement("div");
-    const title = document.createElement("h2");
-    title.textContent = joueur;
-    wrapper.appendChild(title);
-    const table = document.createElement("table");
-    const thead = document.createElement("thead");
-    const headerRow = document.createElement("tr");
-    headerRow.innerHTML = `<th>Exercice</th>` + jours.map(j => `<th>${j}</th>`).join('') + `<th>Écart</th><th>%</th><th>Moyenne</th>`;
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-    const tbody = document.createElement("tbody");
+    function renderTable(joueur, isAdmin) {
+      const jours = ["J1", "J7", "J14", "J21", "J28", "J35", "J42", "J49"];
+      const exercices = [
+        "Aller-retour largeur",
+        "Aller longueur",
+        "Aller-retour longueur",
+        "Aller-retour largeur avec lignes"
+      ];
+      const container = document.getElementById("tableContainer");
+      const wrapper = document.createElement("div");
+      const title = document.createElement("h2");
+      title.textContent = joueur;
+      wrapper.appendChild(title);
+      const table = document.createElement("table");
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      headerRow.innerHTML = `<th>Exercice</th>` + jours.map(j => `<th>${j}</th>`).join('') + `<th>Écart</th><th>%</th><th>Moyenne</th>`;
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      const tbody = document.createElement("tbody");
 
-    exercices.forEach(ex => {
-      const row = document.createElement("tr");
-      const tdLabel = document.createElement("td");
-      tdLabel.textContent = ex;
-      row.appendChild(tdLabel);
+      exercices.forEach(ex => {
+        const row = document.createElement("tr");
+        const tdLabel = document.createElement("td");
+        tdLabel.textContent = ex;
+        row.appendChild(tdLabel);
 
-      jours.forEach((j, i) => {
-        const input = document.createElement("input");
-        input.type = "number";
-        input.step = "0.01";
-        input.dataset.jour = `j${i}`;
-        input.dataset.exercice = ex;
-        const td = document.createElement("td");
-        td.appendChild(input);
-        row.appendChild(td);
+        jours.forEach((j, i) => {
+          const input = document.createElement("input");
+          input.type = "number";
+          input.step = "0.01";
+          input.dataset.jour = `j${i}`;
+          input.dataset.exercice = ex;
+          const td = document.createElement("td");
+          td.appendChild(input);
+          row.appendChild(td);
 
-        db.ref(`joueurs/${joueur}/${ex}/j${i}`).on("value", snap => {
-          input.value = snap.val() || "";
-          updateRow(row);
+          db.ref(`joueurs/${joueur}/${ex}/j${i}`).on("value", snap => {
+            input.value = snap.val() || "";
+            updateRow(row);
+          });
+
+          input.oninput = () => {
+            db.ref(`joueurs/${joueur}/${ex}/j${i}`).set(input.value);
+          };
         });
 
-        input.oninput = () => {
-          db.ref(`joueurs/${joueur}/${ex}/j${i}`).set(input.value);
-        };
+        const tdEcart = document.createElement("td");
+        const tdPct = document.createElement("td");
+        const tdMoy = document.createElement("td");
+        tdEcart.className = "diff";
+        tdPct.className = "pct";
+        tdMoy.className = "moyenne";
+        row.appendChild(tdEcart);
+        row.appendChild(tdPct);
+        row.appendChild(tdMoy);
+        tbody.appendChild(row);
       });
-
-      const tdEcart = document.createElement("td");
-      const tdPct = document.createElement("td");
-      const tdMoy = document.createElement("td");
-      tdEcart.className = "diff";
-      tdPct.className = "pct";
-      tdMoy.className = "moyenne";
-      row.appendChild(tdEcart);
-      row.appendChild(tdPct);
-      row.appendChild(tdMoy);
-      tbody.appendChild(row);
-    });
-    table.appendChild(tbody);
-    wrapper.appendChild(table);
-    container.appendChild(wrapper);
-  }
-
-  function updateRow(row) {
-    const inputs = row.querySelectorAll("input");
-    const values = Array.from(inputs).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
-    const diffs = row.querySelector(".diff");
-    const pcts = row.querySelector(".pct");
-    const moyTd = row.querySelector(".moyenne");
-    if (values.length >= 2) {
-      const prev = values[values.length - 2];
-      const last = values[values.length - 1];
-      const diff = prev - last;
-      const pct = (diff / prev) * 100;
-      diffs.textContent = diff.toFixed(2);
-      pcts.textContent = pct.toFixed(1) + "%";
-    } else {
-      diffs.textContent = "-";
-      pcts.textContent = "-";
+      table.appendChild(tbody);
+      wrapper.appendChild(table);
+      container.appendChild(wrapper);
     }
-    const moyenne = values.reduce((a, b) => a + b, 0) / values.length;
-    moyTd.textContent = isNaN(moyenne) ? "-" : moyenne.toFixed(2);
-  }
 
-  function addPlayer() {
-    const name = document.getElementById("newPlayer").value.trim();
-    if (name) {
-      db.ref(`joueurs/${name}`).set({});
-      document.getElementById("newPlayer").value = "";
-      alert(`Le joueur "${name}" a été ajouté avec succès.`);
+    function updateRow(row) {
+      const inputs = row.querySelectorAll("input");
+      const values = Array.from(inputs).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
+      const diffs = row.querySelector(".diff");
+      const pcts = row.querySelector(".pct");
+      const moyTd = row.querySelector(".moyenne");
+      if (values.length >= 2) {
+        const prev = values[values.length - 2];
+        const last = values[values.length - 1];
+        const diff = prev - last;
+        const pct = (diff / prev) * 100;
+        diffs.textContent = diff.toFixed(2);
+        pcts.textContent = pct.toFixed(1) + "%";
+      } else {
+        diffs.textContent = "-";
+        pcts.textContent = "-";
+      }
+      const moyenne = values.reduce((a, b) => a + b, 0) / values.length;
+      moyTd.textContent = isNaN(moyenne) ? "-" : moyenne.toFixed(2);
     }
-  }
 
-  function removePlayer() {
-    const name = prompt("Quel joueur voulez-vous supprimer ?");
-    if (name) {
-      db.ref(`joueurs/${name}`).remove();
-      alert(`Le joueur "${name}" a été supprimé avec succès.`);
+    function addPlayer() {
+      const name = document.getElementById("newPlayer").value.trim();
+      if (name) {
+        db.ref(`joueurs/${name}`).set({});
+        document.getElementById("newPlayer").value = "";
+        alert(`Le joueur "${name}" a été ajouté avec succès.`);
+      }
     }
-  }
 
-  function exportCSV() {
-    let csv = "Joueur,Exercice,J1,J7,J14,J21,J28,J35,J42,J49,Écart,% de gain,Moyenne\n";
-    const tables = document.querySelectorAll("table");
-    tables.forEach(table => {
-      const joueur = table.previousSibling.textContent;
-      table.querySelectorAll("tbody tr").forEach(row => {
-        const cells = row.querySelectorAll("td");
-        const data = Array.from(cells).map(cell => cell.querySelector("input")?.value || cell.textContent);
-        csv += [joueur, ...data].join(",") + "\n";
+    function removePlayer() {
+      const name = prompt("Quel joueur voulez-vous supprimer ?");
+      if (name) {
+        db.ref(`joueurs/${name}`).remove();
+        alert(`Le joueur "${name}" a été supprimé avec succès.`);
+      }
+    }
+
+    function exportCSV() {
+      let csv = "Joueur,Exercice,J1,J7,J14,J21,J28,J35,J42,J49,Écart,% de gain,Moyenne\n";
+      const tables = document.querySelectorAll("table");
+      tables.forEach(table => {
+        const joueur = table.previousSibling.textContent;
+        table.querySelectorAll("tbody tr").forEach(row => {
+          const cells = row.querySelectorAll("td");
+          const data = Array.from(cells).map(cell => cell.querySelector("input")?.value || cell.textContent);
+          csv += [joueur, ...data].join(",") + "\n";
+        });
       });
-    });
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `perf_samo_tennis.csv`;
-    a.click();
-  }
-</script>
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `perf_samo_tennis.csv`;
+      a.click();
+    }
+  </script>
 </body>
 </html>
