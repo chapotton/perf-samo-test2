@@ -79,16 +79,20 @@
         document.getElementById("exportZone").style.display = "block";
 
         db.ref("joueurs").on("value", snapshot => {
-          document.getElementById("tableContainer").innerHTML = "";
-          const joueurs = snapshot.val() || {};
-          Object.keys(joueurs).forEach(joueur => renderTable(joueur, true));
-        });
+  document.getElementById("tableContainer").innerHTML = "";
+  const joueurs = snapshot.val() || {};
+  Object.keys(joueurs).forEach(joueur => renderTable(joueur, true));
+});
 
       } else {
         currentUser = input;
         db.ref(`joueurs/${input}`).on("value", snapshot => {
-          if (!snapshot.exists()) {
-            db.ref(`joueurs/${input}`).set({});
+  if (!snapshot.exists()) {
+    db.ref(`joueurs/${input}`).set({});
+  }
+  document.getElementById("tableContainer").innerHTML = "";
+  renderTable(input, false);
+});
           }
           document.getElementById("tableContainer").innerHTML = "";
           renderTable(input, false);
