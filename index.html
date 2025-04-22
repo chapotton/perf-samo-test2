@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Suivi Tennis - Roland Samos</title>
+  <title>PERF SAMO TENNIS</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -77,11 +79,11 @@
 </head>
 <body>
   <div id="intro">
-    <div class="logo-text">🎾 Roland Samos 🎾</div>
+    <div class="logo-text">🎾 PERF SAMO TENNIS 🎾</div>
   </div>
 
   <main style="display:none;">
-    <h1>Suivi des Performances - Roland Samos</h1>
+    <h1>PERF SAMO TENNIS</h1>
 
     <div id="identificationZone">
       <form id="identificationForm">
@@ -106,52 +108,55 @@
   </main>
 
   <script>
-    let joueurs = JSON.parse(localStorage.getItem("joueurs")) || [];
+    const firebaseConfig = {
+      apiKey: "AIzaSyDHC_PNIt5NU98c2fazaos0PJ1f8DodFKM",
+      authDomain: "tennis-performance-nicoach.firebaseapp.com",
+      databaseURL: "https://tennis-performance-nicoach-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "tennis-performance-nicoach",
+      storageBucket: "tennis-performance-nicoach.firebasestorage.app",
+      messagingSenderId: "45034481273",
+      appId: "1:45034481273:web:604c246e11a674c0dad6a8",
+      measurementId: "G-ZGZL2PGW09"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     let currentUser = null;
 
-    function identifyUser() {
-      const input = document.getElementById("username").value.trim();
-      if (!input) return;
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(() => {
+        document.getElementById("intro").style.display = "none";
+        document.querySelector("main").style.display = "block";
+      }, 3000);
 
-      if (input === "Yann69") {
-        currentUser = "admin";
-        document.getElementById("identificationZone").style.display = "none";
-        document.getElementById("adminZone").style.display = "block";
-        document.getElementById("exportZone").style.display = "block";
-        renderTables();
-        renderClassement();
-      } else {
-        if (joueurs.includes(input)) {
-          currentUser = input;
+      document.getElementById("identificationForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const input = document.getElementById("username").value.trim();
+        if (!input) return;
+
+        if (input === "Yann69") {
+          currentUser = "admin";
           document.getElementById("identificationZone").style.display = "none";
-          renderTable(input);
+          document.getElementById("adminZone").style.display = "block";
+          document.getElementById("exportZone").style.display = "block";
+          db.ref("joueurs").once("value", snapshot => {
+            const joueurs = snapshot.val() || {};
+            Object.keys(joueurs).forEach(joueur => renderTable(joueur, true));
+          });
         } else {
-          if (joueurs.some(j => j.toLowerCase() === input.toLowerCase())) {
-            alert("Ce prénom ou pseudo existe déjà avec une autre orthographe. Merci d’en choisir un légèrement différent.");
-          } else {
-            joueurs.push(input);
-            localStorage.setItem("joueurs", JSON.stringify(joueurs));
-            currentUser = input;
-            document.getElementById("identificationZone").style.display = "none";
-            renderTable(input);
-          }
+          currentUser = input;
+          db.ref(`joueurs/${input}`).once("value", snapshot => {
+            if (!snapshot.exists()) {
+              db.ref(`joueurs/${input}`).set({});
+            }
+            renderTable(input, false);
+          });
+          document.getElementById("identificationZone").style.display = "none";
         }
-      }
-    }
+      });
+    });
 
-    function renderTables() {
-      const container = document.getElementById("tableContainer");
-      container.innerHTML = "";
-      joueurs.forEach(joueur => container.appendChild(createTable(joueur)));
-    }
-
-    function renderTable(joueur) {
-      const container = document.getElementById("tableContainer");
-      container.innerHTML = "";
-      container.appendChild(createTable(joueur));
-    }
-
-    function createTable(joueur) {
+    function renderTable(joueur, isAdmin) {
       const jours = ["J1", "J7", "J14", "J21", "J28", "J35", "J42", "J49"];
       const exercices = [
         "Aller-retour largeur",
@@ -159,10 +164,11 @@
         "Aller-retour longueur",
         "Aller-retour largeur avec lignes"
       ];
-      const container = document.createElement("div");
+      const container = document.getElementById("tableContainer");
+      const wrapper = document.createElement("div");
       const title = document.createElement("h2");
       title.textContent = joueur;
-      container.appendChild(title);
+      wrapper.appendChild(title);
       const table = document.createElement("table");
       const thead = document.createElement("thead");
       const headerRow = document.createElement("tr");
@@ -179,10 +185,12 @@
           const input = document.createElement("input");
           input.type = "number";
           input.step = "0.01";
-          input.value = localStorage.getItem(`${joueur}-${ex}-j${i}`) || "";
+          db.ref(`joueurs/${joueur}/${ex}/j${i}`).once("value", snap => {
+            input.value = snap.val() || "";
+          });
           input.oninput = () => {
-            localStorage.setItem(`${joueur}-${ex}-j${i}`, input.value);
-            updateRow(row, joueur, ex);
+            db.ref(`joueurs/${joueur}/${ex}/j${i}`).set(input.value);
+            updateRow(row);
           };
           const td = document.createElement("td");
           td.appendChild(input);
@@ -198,136 +206,68 @@
         row.appendChild(tdPct);
         row.appendChild(tdMoy);
         tbody.appendChild(row);
-        updateRow(row, joueur, ex);
+        setTimeout(() => updateRow(row), 1000);
       });
       table.appendChild(tbody);
-      container.appendChild(table);
-      return container;
+      wrapper.appendChild(table);
+      container.appendChild(wrapper);
     }
 
-    function updateRow(row, joueur, exercice) {
+    function updateRow(row) {
       const inputs = row.querySelectorAll("input");
-      const allValues = Array.from(inputs).map(i => parseFloat(i.value));
-      const filledValues = allValues.filter(v => !isNaN(v));
+      const values = Array.from(inputs).map(i => parseFloat(i.value)).filter(v => !isNaN(v));
       const diffs = row.querySelector(".diff");
       const pcts = row.querySelector(".pct");
       const moyTd = row.querySelector(".moyenne");
-      const lastIndex = allValues.map((v, i) => !isNaN(v) ? i : null).filter(i => i !== null).slice(-2);
-      if (lastIndex.length === 2) {
-        const prev = allValues[lastIndex[0]];
-        const last = allValues[lastIndex[1]];
+      if (values.length >= 2) {
+        const prev = values[values.length - 2];
+        const last = values[values.length - 1];
         const diff = prev - last;
         const pct = (diff / prev) * 100;
         diffs.textContent = diff.toFixed(2);
-        diffs.className = diff > 0 ? "diff gain" : "diff loss";
         pcts.textContent = pct.toFixed(1) + "%";
-        pcts.className = pct > 0 ? "pct gain" : "pct loss";
       } else {
         diffs.textContent = "-";
         pcts.textContent = "-";
       }
-      const moyenne = filledValues.reduce((a, b) => a + b, 0) / filledValues.length;
+      const moyenne = values.reduce((a, b) => a + b, 0) / values.length;
       moyTd.textContent = isNaN(moyenne) ? "-" : moyenne.toFixed(2);
-    }
-
-    function renderClassement() {
-      const container = document.getElementById("classementContainer");
-      container.innerHTML = "<h3>Classement des joueurs par exercice (moyenne)</h3>";
-      const exercices = [
-        "Aller-retour largeur",
-        "Aller longueur",
-        "Aller-retour longueur",
-        "Aller-retour largeur avec lignes"
-      ];
-
-      exercices.forEach(ex => {
-        const scores = joueurs.map(j => {
-          let total = 0;
-          let count = 0;
-          for (let i = 0; i < 8; i++) {
-            const val = parseFloat(localStorage.getItem(`${j}-${ex}-j${i}`));
-            if (!isNaN(val)) {
-              total += val;
-              count++;
-            }
-          }
-          return { nom: j, moyenne: count ? total / count : Infinity };
-        });
-        scores.sort((a, b) => a.moyenne - b.moyenne);
-
-        const table = document.createElement("table");
-        const thead = document.createElement("thead");
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<th>${ex}</th><th>Moyenne</th>`;
-        thead.appendChild(tr);
-        table.appendChild(thead);
-
-        const tbody = document.createElement("tbody");
-        scores.forEach(s => {
-          const row = document.createElement("tr");
-          row.innerHTML = `<td>${s.nom}</td><td>${s.moyenne === Infinity ? "-" : s.moyenne.toFixed(2)}</td>`;
-          tbody.appendChild(row);
-        });
-        table.appendChild(tbody);
-        container.appendChild(table);
-      });
     }
 
     function addPlayer() {
       const name = document.getElementById("newPlayer").value.trim();
-      if (name && !joueurs.includes(name)) {
-        joueurs.push(name);
-        localStorage.setItem("joueurs", JSON.stringify(joueurs));
-        renderTables();
-        renderClassement();
+      if (name) {
+        db.ref(`joueurs/${name}`).set({});
+        renderTable(name, true);
       }
     }
 
     function removePlayer() {
       const name = prompt("Quel joueur voulez-vous supprimer ?");
-      if (name && joueurs.includes(name)) {
-        joueurs = joueurs.filter(j => j !== name);
-        localStorage.setItem("joueurs", JSON.stringify(joueurs));
-        Object.keys(localStorage).forEach(key => {
-          if (key.startsWith(name + "-")) localStorage.removeItem(key);
-        });
-        renderTables();
-        renderClassement();
+      if (name) {
+        db.ref(`joueurs/${name}`).remove();
+        location.reload();
       }
     }
 
     function exportCSV() {
       let csv = "Joueur,Exercice,J1,J7,J14,J21,J28,J35,J42,J49,Écart,% de gain,Moyenne\n";
-      document.querySelectorAll("h2").forEach((title, index) => {
-        const joueur = title.textContent;
-        const table = title.nextElementSibling;
+      const tables = document.querySelectorAll("table");
+      tables.forEach(table => {
+        const joueur = table.previousSibling.textContent;
         table.querySelectorAll("tbody tr").forEach(row => {
           const cells = row.querySelectorAll("td");
-          const rowData = Array.from(cells).map(cell => cell.querySelector("input")?.value || cell.textContent);
-          csv += [joueur, ...rowData].join(",") + "\n";
+          const data = Array.from(cells).map(cell => cell.querySelector("input")?.value || cell.textContent);
+          csv += [joueur, ...data].join(",") + "\n";
         });
       });
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `suivi_tennis_complet.csv`;
-      document.body.appendChild(a);
+      a.download = `perf_samo_tennis.csv`;
       a.click();
-      document.body.removeChild(a);
     }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      setTimeout(() => {
-        document.getElementById("intro").style.display = "none";
-        document.querySelector("main").style.display = "block";
-      }, 3000);
-
-      document.getElementById("identificationForm").addEventListener("submit", function(e) {
-        e.preventDefault();
-        identifyUser();
-      });
-    });
   </script>
 </body>
 </html>
