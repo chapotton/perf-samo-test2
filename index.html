@@ -90,8 +90,7 @@
   if (!snapshot.exists()) {
     db.ref(`joueurs/${input}`).set({});
   }
-  document.getElementById("tableContainer").innerHTML = "";
-  renderTable(input, false);
+  
 });
   }
   document.getElementById("tableContainer").innerHTML = "";
