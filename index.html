@@ -89,7 +89,6 @@
         td.appendChild(input);
         row.appendChild(td);
 
-        // Écoute en temps réel
         db.ref(`joueurs/${joueur}/${ex}/j${i}`).on("value", snap => {
           input.value = snap.val() || "";
           updateRow(row);
@@ -141,6 +140,8 @@
     const name = document.getElementById("newPlayer").value.trim();
     if (name) {
       db.ref(`joueurs/${name}`).set({});
+      document.getElementById("newPlayer").value = "";
+      alert(`Le joueur "${name}" a été ajouté avec succès.`);
     }
   }
 
@@ -148,6 +149,7 @@
     const name = prompt("Quel joueur voulez-vous supprimer ?");
     if (name) {
       db.ref(`joueurs/${name}`).remove();
+      alert(`Le joueur "${name}" a été supprimé avec succès.`);
     }
   }
 
