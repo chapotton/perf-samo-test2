@@ -93,14 +93,10 @@
   document.getElementById("tableContainer").innerHTML = "";
   renderTable(input, false);
 });
-          }
-          document.getElementById("tableContainer").innerHTML = "";
-          renderTable(input, false);
-        });
-        document.getElementById("identificationZone").style.display = "none";
-      }
-    });
-  });
+  }
+  document.getElementById("tableContainer").innerHTML = "";
+  renderTable(input, false);
+});
 
   function renderTable(joueur, isAdmin) {
     const jours = ["J1", "J7", "J14", "J21", "J28", "J35", "J42", "J49"];
